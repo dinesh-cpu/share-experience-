@@ -1,9 +1,12 @@
 //! STATUS: OK
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router'
-import { TextField } from '@material-ui/core'
+import { IconButton, TextField } from '@material-ui/core'
+import DeleteIcon from '@material-ui/icons/Delete'
+import ThumbUpOutlinedIcon from '@material-ui/icons/ThumbUpOutlined'
+import ThumbUpIcon from '@material-ui/icons/ThumbUp'
 
-import { showArticle, newComment } from '../../../actions/ArticleActions'
+import { showArticle, newComment, deleteArticle, likeArticle } from '../../../actions/ArticleActions'
 import Comment from '../../../components/Comment/Comment'
 import NoLogin from '../../../components/NoLogin/NoLogin'
 import './styles.css'
@@ -22,6 +25,19 @@ const ShowArticle = ({ user }) => {
         username: user.firstName + ' ' + user.lastName,
         markdown: ''
     })
+    const [articleData, setArticleData] = useState({
+        articleSlug: articleSlug,
+        subjectSlug: subjectSlug,
+        deptSlug: deptSlug
+    })
+    const [isLiked, setIsliked] = useState(false)
+    const [noOfLikes, setNoOfLikes] = useState(0)
+    const [likeData, setLikeData] = useState({
+        deptSlug: deptSlug,
+        subjectSlug: subjectSlug,
+        articleSlug: articleSlug,
+        userID: user._id
+    })
 
     useEffect(() => {
         showArticle(deptSlug, subjectSlug, articleSlug)
@@ -31,6 +47,13 @@ const ShowArticle = ({ user }) => {
                 setSubject(res.data.subject)
                 setArticle(res.data.article)
                 setComments(res.data.comments)
+                setNoOfLikes(res.data.article.likes.length)
+                if (res.data.article.likes.includes(user._id)){
+                    setIsliked(true)
+                } else {
+                    setIsliked(false)
+                }
+                console.log(res.data.article.likes.length)
             })
             .catch(error => {
                 console.log(error)
@@ -66,6 +89,28 @@ const ShowArticle = ({ user }) => {
         }
     }
 
+    const handleDelete = () => {
+        deleteArticle(articleData)
+            .then(res => {
+                console.log(res.data)
+                window.location.href = `/article/${deptSlug}/${subjectSlug}`
+            })
+            .catch(error => {
+                console.log(error)
+                alert('Please try again at a later time..')
+            })
+    }
+
+    const likeFunction = () => {
+        likeArticle(likeData)
+        if (isLiked){
+            setNoOfLikes(noOfLikes-1)
+        } else {
+            setNoOfLikes(noOfLikes+1)
+        }
+        setIsliked(!isLiked)
+    }
+
     if (user){
 
         // console.log(dept)
@@ -81,7 +126,33 @@ const ShowArticle = ({ user }) => {
 
                     <div className='content'>
                         <div dangerouslySetInnerHTML={{ __html: article.sanitizedHTML }} />
-                        {/* { article.sanitizedHTML } */}
+
+                        <div className='lnd'>
+                            <div className='likeContainer'>
+                                <IconButton onClick={likeFunction}>
+                                    {
+                                        isLiked ? (
+                                            <ThumbUpIcon />
+                                        ) : (
+                                            <ThumbUpOutlinedIcon />
+                                        )
+                                    }
+                                </IconButton>
+                                &nbsp;Likes:&nbsp;{ noOfLikes }
+                            </div>
+
+                            {
+                                user.firstName + ' ' + user.lastName === article.username ? (
+                                    <div className='deleteContainer'>
+                                        <IconButton onClick={handleDelete}>
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    </div>
+                                ) : null
+                            }
+                        </div>
+
+
                     </div>
                 </div>
 
